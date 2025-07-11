@@ -1,0 +1,218 @@
+/* Contenedor principal del formulario */
+.formulario {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* Títulos */
+.formulario h2, .formulario h3 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+/* Contenedor de gráfica general */
+.proyeccion-asistencia {
+  background: #f0f9ff;
+  border: 2px solid #007bff;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 25px 0;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+  text-align: center;
+}
+
+.proyeccion-asistencia h3 {
+  color: #007bff;
+  font-size: 1.4rem;
+  margin-bottom: 15px;
+}
+
+.proyeccion-asistencia canvas {
+  width: 100% !important;
+  max-width: 100%;
+  height: 300px !important;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* Acciones de alumno */
+.accionesAlumno {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.accionesAlumno button {
+  background-color: #007bff;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.accionesAlumno button:hover {
+  background-color: #0056b3;
+}
+
+.presente {
+  background-color: #28a745 !important;
+}
+
+.ausente {
+  background-color: #dc3545 !important;
+}
+
+.sin-marcar {
+  background-color: #ffc107 !important;
+  color: #000;
+}
+
+.aviso-uniforme {
+  color: #dc3545;
+  font-weight: bold;
+  margin-left: 10px;
+  font-size: 0.9rem;
+}
+
+/* Botones grupales */
+.grupo-botones-asistencia button {
+  margin-right: 8px;
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  border: none;
+  background-color: #28a745;
+  color: white;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.grupo-botones-asistencia button:hover {
+  background-color: #1e7e34;
+}
+
+/* Inputs y selects */
+input[type="text"], input[type="email"], input[type="password"], select {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+/* Botón general */
+button {
+  font-size: 1rem;
+}
+
+/* Lista de alumnos */
+#listaAlumnos {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 15px;
+}
+
+#listaAlumnos li {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Nombre del alumno */
+.nombreAlumno {
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+/* Estilos del modal */
+.modal {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-contenido {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.25);
+}
+
+.modal-contenido h3 {
+  margin-bottom: 15px;
+  color: #007bff;
+}
+
+/* Inputs del modal */
+.modal-contenido input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Botones del modal */
+.modal-contenido button {
+  width: 45%;
+  padding: 8px 0;
+  margin: 5px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.modal-contenido .btn-confirmar {
+  background-color: #dc3545;
+}
+
+.modal-contenido .btn-confirmar:hover {
+  background-color: #b52a3a;
+}
+
+.modal-contenido .btn-cancelar {
+  background-color: #6c757d;
+}
+
+.modal-contenido .btn-cancelar:hover {
+  background-color: #5a6268;
+}
+
+/* Asegura que el canvas individual tenga tamaño visible */
+.modal-contenido canvas {
+  width: 100% !important;
+  height: 250px !important;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
