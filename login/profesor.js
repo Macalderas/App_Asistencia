@@ -24,19 +24,26 @@ function loginProfesor() {
   const correo = document.getElementById("correoProfesorLogin").value;
   const password = document.getElementById("passwordProfesorLogin").value;
 
-  const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-  const profesorIndex = profesores.findIndex(p => p.correo === correo && p.password === password);
-
-  if (profesorIndex >= 0) {
-    if (!profesores[profesorIndex].alumnos) {
-      profesores[profesorIndex].alumnos = [];
-      localStorage.setItem("profesores", JSON.stringify(profesores));
-    }
-    mostrarPanelProfesor(profesores[profesorIndex]);
-  } else {
-    alert("Credenciales incorrectas");
-  }
+  fetch("http://localhost:3000/profesores/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ correo, password })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Credenciales incorrectas");
+    return res.json();
+  })
+  .then(profesor => {
+    profesor.alumnos = []; // Inicializa con lista vacía
+    mostrarPanelProfesor(profesor);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Correo o contraseña incorrectos");
+  });
 }
+
+
 
 function mostrarRecuperar() {
   root.innerHTML = "";

@@ -132,19 +132,25 @@ function registrarProfesor() {
     return;
   }
 
-  const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-
-  if (profesores.find(p => p.correo === correo)) {
-    alert("Ese correo ya está registrado");
-    return;
-  }
-
-  profesores.push({ correo, password, nivel, grados });
-  localStorage.setItem("profesores", JSON.stringify(profesores));
-
-  alert("Profesor registrado correctamente");
-  mostrarPanelAdmin();
+  fetch("http://localhost:3000/profesores", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ correo, password, nivel, grados })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al registrar");
+    return res.json();
+  })
+  .then(data => {
+    alert(data.mensaje || "Profesor registrado correctamente");
+    mostrarPanelAdmin();
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Hubo un problema al registrar el profesor");
+  });
 }
+
 
 function crearInput(type, id, placeholder) {
   const input = document.createElement("input");
