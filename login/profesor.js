@@ -506,19 +506,70 @@ function agregarAlumno(profesor) {
 }
 
 function eliminarAlumno(profesor, alumnoIndex) {
-  if (!confirm("¿Seguro que quieres eliminar este alumno?")) return;
+  const modal = document.createElement("div");
+  modal.style = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: flex; justify-content: center;
+    align-items: center; z-index: 9999;
+  `;
 
-  profesor.alumnos.splice(alumnoIndex, 1);
+  const contenido = document.createElement("div");
+  contenido.style = `
+    background: white; padding: 20px; border-radius: 8px;
+    min-width: 300px; text-align: center;
+  `;
 
-  const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-  const profIndex = profesores.findIndex(p => p.correo === profesor.correo);
-  if (profIndex < 0) return;
+  const titulo = document.createElement("h3");
+  titulo.textContent = "Eliminar alumno";
 
-  profesores[profIndex] = profesor;
-  localStorage.setItem("profesores", JSON.stringify(profesores));
+  const mensaje = document.createElement("p");
+  mensaje.textContent = "Ingresa tu contraseña para confirmar:";
 
-  mostrarPanelProfesor(profesor);
+  const input = document.createElement("input");
+  input.type = "password";
+  input.placeholder = "Contraseña";
+  input.style = "width: 100%; padding: 8px; margin: 10px 0;";
+
+  const error = document.createElement("p");
+  error.style = "color: red; font-size: 14px; display: none; margin-top: 5px;";
+  error.textContent = "Contraseña incorrecta";
+
+  const btnConfirmar = crearBoton("Confirmar", () => {
+    if (input.value === profesor.password) {
+      if (!confirm("¿Estás seguro de eliminar al alumno?")) return;
+
+      profesor.alumnos.splice(alumnoIndex, 1);
+      const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
+      const profIndex = profesores.findIndex(p => p.correo === profesor.correo);
+      if (profIndex >= 0) {
+        profesores[profIndex] = profesor;
+        localStorage.setItem("profesores", JSON.stringify(profesores));
+      }
+      mostrarPanelProfesor(profesor);
+      modal.remove();
+    } else {
+      error.style.display = "block";
+      input.value = "";
+      btnConfirmar.disabled = true;
+    }
+  });
+
+  btnConfirmar.disabled = true;
+
+  input.addEventListener("input", () => {
+    btnConfirmar.disabled = input.value.trim() === "";
+    error.style.display = "none";
+  });
+
+  const btnCancelar = crearBoton("Cancelar", () => modal.remove());
+
+  contenido.append(titulo, mensaje, input, error, btnConfirmar, btnCancelar);
+  modal.appendChild(contenido);
+  document.body.appendChild(modal);
+  input.focus();
 }
+
+
 
 function obtenerResumenAsistenciaPorGrado(profesor) {
   const resumen = {};
