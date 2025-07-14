@@ -29,21 +29,23 @@ function loginProfesor() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ correo, password })
   })
-  .then(res => {
-    if (!res.ok) throw new Error("Credenciales incorrectas");
-    return res.json();
-  })
-  .then(profesor => {
-    profesor.alumnos = []; // Inicializa con lista vacía
-    mostrarPanelProfesor(profesor);
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Correo o contraseña incorrectos");
-  });
+    .then(res => {
+      if (!res.ok) throw new Error("Credenciales incorrectas");
+      return res.json();
+    })
+    .then(profesor => {
+      fetch(`http://localhost:3000/alumnos?correo=${encodeURIComponent(correo)}`)
+        .then(res => res.json())
+        .then(alumnos => {
+          profesor.alumnos = alumnos;
+          mostrarPanelProfesor(profesor);
+        });
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Correo o contraseña incorrectos");
+    });
 }
-
-
 
 function mostrarRecuperar() {
   root.innerHTML = "";
@@ -56,14 +58,8 @@ function mostrarRecuperar() {
   const correo = crearInput("email", "correoRecuperar", "Correo del profesor");
   const btnBuscar = crearBoton("Recuperar", () => {
     const email = document.getElementById("correoRecuperar").value;
-    const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-    const profesor = profesores.find(p => p.correo === email);
-    if (profesor) {
-      alert(`Tu contraseña es: ${profesor.password}`);
-      mostrarLoginProfesor();
-    } else {
-      alert("Correo no encontrado");
-    }
+    alert("Recuperación disponible solo desde el backend."); 
+    mostrarLoginProfesor();
   });
 
   const volver = crearBoton("Volver", mostrarLoginProfesor);
@@ -71,7 +67,7 @@ function mostrarRecuperar() {
   root.appendChild(contenedor);
 }
 
-function mostrarPanelProfesor(profesor) {
+export function mostrarPanelProfesor(profesor) {
   root.innerHTML = "";
 
   const contenedor = document.createElement("section");
@@ -188,7 +184,6 @@ function mostrarPanelProfesor(profesor) {
 
     const btnAsistencia = document.createElement("button");
 
-    // Estado asistencia usando tu lógica mejorada
     const asistencias = alumno.asistencias || [];
     const ultimaAsistencia = asistencias.length > 0 ? asistencias[asistencias.length - 1] : null;
 
@@ -243,7 +238,10 @@ function mostrarPanelProfesor(profesor) {
     listaAlumnos.appendChild(li);
   });
 
-  const cerrar = crearBoton("Cerrar sesión", mostrarSelector);
+  const cerrar = crearBoton("Cerrar sesión", () => {
+    localStorage.removeItem("profesorSesion");
+    mostrarSelector();
+  });
 
   contenedor.append(
     titulo,
@@ -305,8 +303,6 @@ function toggleAsistencia(profesor, alumnoIndex, btn) {
   }
 
   const ultima = alumno.asistencias.length ? alumno.asistencias[alumno.asistencias.length - 1] : null;
-
-  // Ciclo entre 3 estados: null/undefined -> true -> false -> null/undefined
   let nuevoEstado;
   if (ultima === null || ultima === undefined) {
     nuevoEstado = true;
@@ -318,17 +314,13 @@ function toggleAsistencia(profesor, alumnoIndex, btn) {
 
   alumno.asistencias.push(nuevoEstado);
 
-  btn.textContent = nuevoEstado === true ? "Presente" : nuevoEstado === false ? "Ausente" : "Sin marcar";
-  btn.classList.toggle("presente", nuevoEstado === true);
-  btn.classList.toggle("ausente", nuevoEstado === false);
-  btn.classList.toggle("sin-marcar", nuevoEstado === null);
-
-  const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-  const profIndex = profesores.findIndex(p => p.correo === profesor.correo);
-  if (profIndex < 0) return;
-
-  profesores[profIndex] = profesor;
-  localStorage.setItem("profesores", JSON.stringify(profesores));
+  fetch(`http://localhost:3000/alumnos/${alumno.id}/asistencia`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ asistencias: alumno.asistencias })
+  })
+  .then(() => mostrarPanelProfesor(profesor))
+  .catch(err => console.error("Error actualizando asistencia", err));
 }
 
 function marcarAsistenciaTodos(profesor, estado) {
@@ -337,14 +329,13 @@ function marcarAsistenciaTodos(profesor, estado) {
       alumno.asistencias = [];
     }
     alumno.asistencias.push(estado);
+
+    fetch(`http://localhost:3000/alumnos/${alumno.id}/asistencia`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asistencias: alumno.asistencias })
+    }).catch(err => console.error("Error actualizando asistencia", err));
   });
-
-  const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-  const profIndex = profesores.findIndex(p => p.correo === profesor.correo);
-  if (profIndex < 0) return;
-
-  profesores[profIndex] = profesor;
-  localStorage.setItem("profesores", JSON.stringify(profesores));
 
   mostrarPanelProfesor(profesor);
 }
@@ -405,16 +396,32 @@ function actualizarUniforme(profesor, alumnoIndex, checkboxes) {
     .filter(cb => cb.checked)
     .map(cb => cb.value);
 
-  const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-  const profIndex = profesores.findIndex(p => p.correo === profesor.correo);
-  if (profIndex < 0) return;
+  const alumno = profesor.alumnos[alumnoIndex];
+  alumno.uniforme = nuevasFaltas;
 
-  profesor.alumnos[alumnoIndex].uniforme = nuevasFaltas;
-  profesores[profIndex] = profesor;
-
-  localStorage.setItem("profesores", JSON.stringify(profesores));
-  mostrarPanelProfesor(profesor);
+  fetch(`http://localhost:3000/alumnos/${alumno.id}/uniforme`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ uniforme: alumno.uniforme })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al actualizar uniforme");
+    return res.json();
+  })
+  .then(() => {
+    return fetch(`http://localhost:3000/alumnos?correo=${encodeURIComponent(profesor.correo)}`);
+  })
+  .then(res => res.json())
+  .then(nuevosAlumnos => {
+    profesor.alumnos = nuevosAlumnos;
+    mostrarPanelProfesor(profesor);
+  })
+  .catch(err => {
+    console.error("Error guardando uniforme:", err);
+    alert("Error al guardar uniforme");
+  });
 }
+
 
 function enviarReporteUniforme(profesor, alumnoIndex) {
   const alumno = profesor.alumnos[alumnoIndex];
@@ -495,21 +502,28 @@ function agregarAlumno(profesor) {
     return;
   }
 
-  const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-  const profIndex = profesores.findIndex(p => p.correo === profesor.correo);
-  if (profIndex < 0) return;
-
-  profesor.alumnos.push({
+  const nuevoAlumno = {
     nombre,
     grado,
     asistencias: [],
-    uniforme: []
+    uniforme: [],
+    correoProfesor: profesor.correo
+  };
+
+  fetch("http://localhost:3000/alumnos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(nuevoAlumno)
+  })
+  .then(res => res.json())
+  .then(data => {
+    profesor.alumnos.push({ ...nuevoAlumno, id: data.id });
+    mostrarPanelProfesor(profesor);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error al guardar el alumno");
   });
-
-  profesores[profIndex] = profesor;
-  localStorage.setItem("profesores", JSON.stringify(profesores));
-
-  mostrarPanelProfesor(profesor);
 }
 
 function eliminarAlumno(profesor, alumnoIndex) {
@@ -517,165 +531,105 @@ function eliminarAlumno(profesor, alumnoIndex) {
   modal.style = `
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); display: flex; justify-content: center;
-    align-items: center; z-index: 9999;
+    align-items: center; z-index: 1000;
   `;
 
   const contenido = document.createElement("div");
   contenido.style = `
-    background: white; padding: 20px; border-radius: 8px;
-    min-width: 300px; text-align: center;
+    background: white; padding: 20px; border-radius: 8px; min-width: 300px;
   `;
 
   const titulo = document.createElement("h3");
-  titulo.textContent = "Eliminar alumno";
+  titulo.textContent = "Confirmar eliminación";
+  contenido.appendChild(titulo);
 
   const mensaje = document.createElement("p");
-  mensaje.textContent = "Ingresa tu contraseña para confirmar:";
+  mensaje.textContent = "¿Estás seguro de eliminar este alumno?";
+  contenido.appendChild(mensaje);
 
-  const input = document.createElement("input");
-  input.type = "password";
-  input.placeholder = "Contraseña";
-  input.style = "width: 100%; padding: 8px; margin: 10px 0;";
-
-  const error = document.createElement("p");
-  error.style = "color: red; font-size: 14px; display: none; margin-top: 5px;";
-  error.textContent = "Contraseña incorrecta";
-
-  const btnConfirmar = crearBoton("Confirmar", () => {
-    if (input.value === profesor.password) {
-      if (!confirm("¿Estás seguro de eliminar al alumno?")) return;
-
+  const btnConfirmar = crearBoton("Sí, eliminar", () => {
+    const alumno = profesor.alumnos[alumnoIndex];
+    fetch(`http://localhost:3000/alumnos/${alumno.id}`, {
+      method: "DELETE"
+    })
+    .then(() => {
       profesor.alumnos.splice(alumnoIndex, 1);
-      const profesores = JSON.parse(localStorage.getItem("profesores")) || [];
-      const profIndex = profesores.findIndex(p => p.correo === profesor.correo);
-      if (profIndex >= 0) {
-        profesores[profIndex] = profesor;
-        localStorage.setItem("profesores", JSON.stringify(profesores));
-      }
       mostrarPanelProfesor(profesor);
-      modal.remove();
-    } else {
-      error.style.display = "block";
-      input.value = "";
-      btnConfirmar.disabled = true;
-    }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error al eliminar alumno");
+    });
+    document.body.removeChild(modal);
   });
 
-  btnConfirmar.disabled = true;
-
-  input.addEventListener("input", () => {
-    btnConfirmar.disabled = input.value.trim() === "";
-    error.style.display = "none";
+  const btnCancelar = crearBoton("Cancelar", () => {
+    document.body.removeChild(modal);
   });
 
-  const btnCancelar = crearBoton("Cancelar", () => modal.remove());
+  contenido.appendChild(btnConfirmar);
+  contenido.appendChild(btnCancelar);
 
-  contenido.append(titulo, mensaje, input, error, btnConfirmar, btnCancelar);
   modal.appendChild(contenido);
   document.body.appendChild(modal);
-  input.focus();
 }
-
-
-
-function obtenerResumenAsistenciaPorGrado(profesor) {
-  const resumen = {};
-  profesor.grados.forEach(grado => {
-    resumen[grado] = { presentes: 0, ausentes: 0 };
-  });
-
-  profesor.alumnos.forEach(alumno => {
-    const asistencias = alumno.asistencias || [];
-    const ultima = asistencias.length > 0 ? asistencias[asistencias.length - 1] : null;
-    if (ultima === true) {
-      resumen[alumno.grado].presentes++;
-    } else if (ultima === false) {
-      resumen[alumno.grado].ausentes++;
-    }
-  });
-
-  return resumen;
-}
-
-// FUNCION NUEVA: Proyección individual en gráfica de barras con modal
 
 function mostrarProyeccionIndividual(profesor, alumnoIndex) {
   const alumno = profesor.alumnos[alumnoIndex];
   const asistencias = alumno.asistencias || [];
 
-  // Contar estados
+  const ventana = window.open("", "_blank", "width=400,height=400");
+  ventana.document.write(`<h2>Proyección de asistencia - ${alumno.nombre}</h2>`);
+
   const presentes = asistencias.filter(a => a === true).length;
   const ausentes = asistencias.filter(a => a === false).length;
   const sinMarcar = asistencias.filter(a => a === null || a === undefined).length;
 
-  // Crear modal
-  const modal = document.createElement("div");
-  modal.className = "modal";
+  ventana.document.write(`<p>Presentes: ${presentes}</p>`);
+  ventana.document.write(`<p>Ausentes: ${ausentes}</p>`);
+  ventana.document.write(`<p>Sin marcar: ${sinMarcar}</p>`);
 
-  const modalContenido = document.createElement("div");
-  modalContenido.className = "modal-contenido";
+  ventana.document.write(`<canvas id="graficaIndividual" width="300" height="300"></canvas>`);
 
-  const titulo = document.createElement("h3");
-  titulo.textContent = `Proyección de asistencia - ${alumno.nombre}`;
-
-  // Canvas para gráfica
-  const canvas = document.createElement("canvas");
-  canvas.id = "graficaProyeccionIndividual";
-
-  // Botón cerrar
-  const btnCerrar = document.createElement("button");
-  btnCerrar.textContent = "Cerrar";
-  btnCerrar.onclick = () => {
-    modal.remove();
-  };
-
-  modalContenido.append(titulo, canvas, btnCerrar);
-  modal.appendChild(modalContenido);
-  document.body.appendChild(modal);
-
-  // Crear gráfica con Chart.js
-  const ctx = canvas.getContext("2d");
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: ["Presente", "Ausente", "Sin marcar"],
-      datasets: [{
-        label: "Asistencias",
-        data: [presentes, ausentes, sinMarcar],
-        backgroundColor: [
-          "rgba(40, 167, 69, 0.7)",   // verde
-          "rgba(220, 53, 69, 0.7)",   // rojo
-          "rgba(255, 193, 7, 0.7)"    // amarillo
-        ],
-        borderColor: [
-          "rgba(40, 167, 69, 1)",
-          "rgba(220, 53, 69, 1)",
-          "rgba(255, 193, 7, 1)"
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true,
-          stepSize: 1,
-          ticks: {
-            precision: 0
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          display: false
-        }
+  const script = ventana.document.createElement("script");
+  script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+  script.onload = () => {
+    const ctx = ventana.document.getElementById("graficaIndividual").getContext("2d");
+    new ventana.Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: ["Presentes", "Ausentes", "Sin marcar"],
+        datasets: [{
+          label: "Asistencia",
+          data: [presentes, ausentes, sinMarcar],
+          backgroundColor: [
+            "rgba(40, 167, 69, 0.7)",
+            "rgba(220, 53, 69, 0.7)",
+            "rgba(255, 193, 7, 0.7)"
+          ]
+        }]
       }
-    }
-  });
+    });
+  };
+  ventana.document.head.appendChild(script);
 }
 
-// FUNCIONES UTILES PARA CREAR ELEMENTOS
+function obtenerResumenAsistenciaPorGrado(profesor) {
+  const resumen = {};
+  profesor.grados.forEach(g => {
+    resumen[g] = { presentes: 0, ausentes: 0 };
+  });
+
+  profesor.alumnos.forEach(alumno => {
+    const asistencias = alumno.asistencias || [];
+    const ultimo = asistencias.length ? asistencias[asistencias.length - 1] : null;
+
+    if (ultimo === true) resumen[alumno.grado].presentes++;
+    else if (ultimo === false) resumen[alumno.grado].ausentes++;
+  });
+
+  return resumen;
+}
 
 function crearInput(type, id, placeholder) {
   const input = document.createElement("input");

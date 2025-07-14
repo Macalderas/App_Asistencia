@@ -24,4 +24,21 @@ export function mostrarSelector() {
   root.append(contenedor);
 }
 
-mostrarSelector();
+function verificarSesionProfesor() {
+  const sesion = JSON.parse(localStorage.getItem("profesorSesion"));
+  if (!sesion) return;
+
+  fetch(`http://localhost:3000/alumnos?correo=${encodeURIComponent(sesion.correo)}`)
+    .then(res => res.json())
+    .then(alumnos => {
+      sesion.alumnos = alumnos;
+      import("./login/profesor.js").then(m => m.mostrarPanelProfesor(sesion));
+    })
+    .catch(() => {
+      localStorage.removeItem("profesorSesion");
+      mostrarSelector();
+    });
+}
+
+
+verificarSesionProfesor() || mostrarSelector();
