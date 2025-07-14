@@ -28,7 +28,7 @@ function verificarSesionProfesor() {
   const sesion = JSON.parse(localStorage.getItem("profesorSesion"));
   if (!sesion) return;
 
-  fetch(`http://localhost:3000/alumnos?correo=${encodeURIComponent(sesion.correo)}`)
+  fetch(`http://localhost:3000/alumno?correo=${encodeURIComponent(sesion.correo)}`)
     .then(res => res.json())
     .then(alumnos => {
       sesion.alumnos = alumnos;
