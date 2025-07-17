@@ -24,7 +24,7 @@ function loginProfesor() {
   const correo = document.getElementById("correoProfesorLogin").value;
   const password = document.getElementById("passwordProfesorLogin").value;
 
-  fetch("http://localhost:3000/profesores/login", {
+  fetch("https://app-backend-07.onrender.com/profesores/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ correo, password })
@@ -34,7 +34,7 @@ function loginProfesor() {
       return res.json();
     })
     .then(profesor => {
-      fetch(`http://localhost:3000/alumnos?correo=${encodeURIComponent(correo)}`)
+      fetch(`https://app-backend-07.onrender.com/alumnos?correo=${encodeURIComponent(correo)}`)
         .then(res => res.json())
         .then(alumnos => {
           profesor.alumnos = alumnos;
@@ -314,7 +314,7 @@ function toggleAsistencia(profesor, alumnoIndex, btn) {
 
   alumno.asistencias.push(nuevoEstado);
 
-  fetch(`http://localhost:3000/alumnos/${alumno.id}/asistencia`, {
+  fetch(`https://app-backend-07.onrender.com/alumnos/${alumno.id}/asistencia`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ asistencias: alumno.asistencias })
@@ -330,7 +330,7 @@ function marcarAsistenciaTodos(profesor, estado) {
     }
     alumno.asistencias.push(estado);
 
-    fetch(`http://localhost:3000/alumnos/${alumno.id}/asistencia`, {
+    fetch(`https://app-backend-07.onrender.com/alumnos/${alumno.id}/asistencia`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ asistencias: alumno.asistencias })
@@ -399,7 +399,7 @@ function actualizarUniforme(profesor, alumnoIndex, checkboxes) {
   const alumno = profesor.alumnos[alumnoIndex];
   alumno.uniforme = nuevasFaltas;
 
-  fetch(`http://localhost:3000/alumnos/${alumno.id}/uniforme`, {
+  fetch(`https://app-backend-07.onrender.com/alumnos/${alumno.id}/uniforme`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ uniforme: alumno.uniforme })
@@ -409,7 +409,7 @@ function actualizarUniforme(profesor, alumnoIndex, checkboxes) {
     return res.json();
   })
   .then(() => {
-    return fetch(`http://localhost:3000/alumnos?correo=${encodeURIComponent(profesor.correo)}`);
+    return fetch(`https://app-backend-07.onrender.com/alumnos?correo=${encodeURIComponent(profesor.correo)}`);
   })
   .then(res => res.json())
   .then(nuevosAlumnos => {
@@ -510,7 +510,7 @@ function agregarAlumno(profesor) {
     correoProfesor: profesor.correo
   };
 
-  fetch("http://localhost:3000/alumnos", {
+  fetch("https://app-backend-07.onrender.com/alumnos", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(nuevoAlumno)
@@ -544,23 +544,46 @@ function eliminarAlumno(profesor, alumnoIndex) {
   contenido.appendChild(titulo);
 
   const mensaje = document.createElement("p");
-  mensaje.textContent = "¿Estás seguro de eliminar este alumno?";
+  mensaje.textContent = "Para eliminar al alumno, escribe tu contraseña:";
   contenido.appendChild(mensaje);
 
-  const btnConfirmar = crearBoton("Sí, eliminar", () => {
-    const alumno = profesor.alumnos[alumnoIndex];
-    fetch(`http://localhost:3000/alumnos/${alumno.id}`, {
-      method: "DELETE"
+  const inputPassword = document.createElement("input");
+  inputPassword.type = "password";
+  inputPassword.placeholder = "Tu contraseña";
+  contenido.appendChild(inputPassword);
+
+  const btnConfirmar = crearBoton("Eliminar", () => {
+    const password = inputPassword.value.trim();
+    if (!password) {
+      alert("Debes ingresar tu contraseña.");
+      return;
+    }
+
+    // Validar contraseña del profesor
+    fetch("https://app-backend-07.onrender.com/profesores/validar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ correo: profesor.correo, password })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Contraseña incorrecta");
+      return res.json();
+    })
+    .then(() => {
+      const alumno = profesor.alumnos[alumnoIndex];
+      return fetch(`https://app-backend-07.onrender.com/alumnos/${alumno.id}`, {
+        method: "DELETE"
+      });
     })
     .then(() => {
       profesor.alumnos.splice(alumnoIndex, 1);
       mostrarPanelProfesor(profesor);
+      document.body.removeChild(modal);
     })
     .catch(err => {
       console.error(err);
-      alert("Error al eliminar alumno");
+      alert("Contraseña incorrecta o error al eliminar");
     });
-    document.body.removeChild(modal);
   });
 
   const btnCancelar = crearBoton("Cancelar", () => {
@@ -573,6 +596,7 @@ function eliminarAlumno(profesor, alumnoIndex) {
   modal.appendChild(contenido);
   document.body.appendChild(modal);
 }
+
 
 function mostrarProyeccionIndividual(profesor, alumnoIndex) {
   const alumno = profesor.alumnos[alumnoIndex];

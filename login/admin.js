@@ -132,7 +132,7 @@ function registrarProfesor() {
     return;
   }
 
-  fetch("http://localhost:3000/profesores", {
+  fetch("https://app-backend-07.onrender.com/profesores", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ correo, password, nivel, grados })
